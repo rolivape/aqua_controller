@@ -1,0 +1,55 @@
+# 🧠 ARCHIVOS TEMPORALES Y BINARIOS
+*.pyc
+*.DS_Store
+*.out
+*.log
+*.bak
+*.swp
+*.tmp
+
+# 🧱 BUILD / COMPILADOS
+**/build/
+/*.elf
+/*.bin
+/*.map
+/*.hex
+*.a
+*.o
+*.d
+
+# ⚙️ ESP-IDF
+sdkconfig
+sdkconfig.old
+*.gen.c
+*.gen.h
+/xtensa-esp32-elf/
+/project_description.json
+*.ld
+
+# 🧪 VS CODE Y PLATFORMS
+.vscode/
+.idea/
+*.code-workspace
+*.launch.json
+.env/
+
+# 📦 PLATFORMIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# 🛠 CMake / Ninja / Meson
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# 📚 Git Submodules o Paquetes
+managed_components/
+dist/
+__pycache__/
+
+# 🧪 Test y dumps
+*.testlog
+*.dump
+*.core
