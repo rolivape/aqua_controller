@@ -1,3 +1,3 @@
-idf_component_register(SRCS "bios_config_aq.c"
+idf_component_register(SRCS
                     INCLUDE_DIRS "include"
                     REQUIRES nvs_flash json_log)
