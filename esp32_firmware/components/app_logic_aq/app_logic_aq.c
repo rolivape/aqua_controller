@@ -1,54 +1,34 @@
 #include "app_logic_aq.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "nvs_flash.h"
-#include "config_aq.h"
-#include "json_log.h"
-#include "usb_comm_aq.h"
 #include "esp_log.h"
 
-static const char *TAG = "APP_LOGIC_AQ";
+#include "json_log.h"
+#include "bios_config_aq.h" // Use the correct config component
 
-// Dummy callback for USB events within app_logic
-void app_logic_usb_event_callback(bool connected) {
-    if (connected) {
-        log_json_message(TAG, "INFO", "USB connection event: CONNECTED");
-    } else {
-        log_json_message(TAG, "WARN", "USB connection event: DISCONNECTED");
-    }
-}
+static const char *TAG = "APP_LOGIC_AQ";
 
 esp_err_t app_logic_aq_init(void) {
     log_json_message(TAG, "INFO", "Initializing application logic...");
 
-    esp_err_t err = config_aq_init();
+    char device_role[BIOS_CONFIG_AQ_STR_MAX_LEN];
+    esp_err_t err = bios_config_aq_get_string("bios.role", device_role, sizeof(device_role));
 
     if (err != ESP_OK) {
-        log_json_message(TAG, "ERROR", "Failed to initialize config_aq component.");
+        // This path is now only taken on fatal NVS errors, not on key-not-found.
+        log_json_message(TAG, "ERROR", "Failed to get device role due to NVS error.");
         return err;
-    } else {
-        log_json_message(TAG, "INFO", "config_aq component initialized successfully.");
     }
 
-    char device_role[32];
-    err = config_aq_get_string("device_role", device_role, sizeof(device_role));
+    // Log the retrieved role. It will be "UNKNOWN" on first boot.
+    char log_msg[128];
+    snprintf(log_msg, sizeof(log_msg), "Device role loaded: %s", device_role);
+    log_json_message(TAG, "INFO", log_msg);
 
-    if (err == ESP_OK) {
-        log_json_message(TAG, "INFO", "Retrieved device role.");
-    } else {
-        log_json_message(TAG, "ERROR", "Failed to get device role.");
+    if (strcmp(device_role, "UNKNOWN") == 0) {
+        log_json_message(TAG, "WARN", "Device role is not set. Waiting for configuration.");
     }
-    
-    log_json_message(TAG, "INFO", "config_aq handle closed.");
 
-    // This component should not be initializing USB, main.c should.
-    // This is left here for now to satisfy compilation, but in a real
-    // architecture this would be removed.
-    // err = usb_comm_aq_init("panel-01", "192.168.71.1", app_logic_usb_event_callback);
-    // if (err != ESP_OK) {
-    //     log_json_message(TAG, "ERROR", "Failed to initialize usb_comm_aq component.");
-    //     return err;
-    // }
-
+    log_json_message(TAG, "INFO", "Application logic initialized successfully.");
     return ESP_OK;
 }

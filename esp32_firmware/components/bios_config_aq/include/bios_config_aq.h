@@ -1,59 +1,55 @@
 /*
  * Aqua Controller BIOS Configuration Component (bios_config_aq)
  *
- * This component is responsible for loading the device's persistent
- * configuration from Non-Volatile Storage (NVS) at boot. It provides
- * a structured way to access core settings like the device role.
+ * Manages persistent device configuration using individual key-value
+ * pairs in Non-Volatile Storage (NVS).
  */
 
 #ifndef BIOS_CONFIG_AQ_H
 #define BIOS_CONFIG_AQ_H
 
 #include "esp_err.h"
-#include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Maximum length for string fields in the BIOS configuration
 #define BIOS_CONFIG_AQ_STR_MAX_LEN 32
 
 /**
- * @brief Holds the persistent BIOS configuration of the device.
+ * @brief Retrieves a configuration string from NVS.
  *
- * This structure is serialized to and from NVS to maintain core
- * device settings across reboots.
- */
-typedef struct {
-    /** @brief The role of the device (e.g., "master", "sump_sensor", "display"). */
-    char device_role[BIOS_CONFIG_AQ_STR_MAX_LEN];
-
-    /** @brief A unique identifier for the panel or device. */
-    char panel_id[BIOS_CONFIG_AQ_STR_MAX_LEN];
-
-    // Future settings can be added here, e.g.:
-    // uint32_t safe_mode_flags;
-    // char mqtt_broker_uri[128];
-
-} bios_config_t;
-
-/**
- * @brief Loads the BIOS configuration from NVS into the provided struct.
+ * If the requested key is not found in NVS, this function will return a
+ * default value ("UNKNOWN") and log a warning. It does not return an error
+ * in this case, ensuring a graceful fallback.
  *
- * This function attempts to read the configuration blob from the 'aquacfg'
- * NVS namespace. If the configuration is not found (e.g., on first boot),
- * it initializes the struct with default values, writes them to NVS, and
- * commits the changes.
- *
- * @param[out] config Pointer to a `bios_config_t` struct to be filled with the loaded configuration.
+ * @param[in]  key       The NVS key for the desired string (e.g., "bios.role").
+ * @param[out] out_value Buffer to store the retrieved string.
+ * @param[in]  max_len   The maximum size of the out_value buffer.
  *
  * @return
- *     - ESP_OK: On successful load or successful creation of a default config.
- *     - ESP_FAIL: If a fatal error occurs during NVS access or deserialization.
- *     - ESP_ERR_INVALID_ARG: If the `config` pointer is NULL.
+ *     - ESP_OK: If the value was retrieved successfully or a default was applied.
+ *     - ESP_FAIL: On a fatal NVS error.
+ *     - ESP_ERR_INVALID_ARG: If input pointers are NULL or max_len is 0.
  */
-esp_err_t bios_config_aq_load(bios_config_t *config);
+esp_err_t bios_config_aq_get_string(const char *key, char *out_value, size_t max_len);
+
+/**
+ * @brief Stores a configuration string in NVS.
+ *
+ * This function allows for runtime updates of configuration values, such as
+ * setting the device role via a command from the host.
+ *
+ * @param[in] key   The NVS key for the value to be stored (e.g., "bios.role").
+ * @param[in] value The string value to store.
+ *
+ * @return
+ *     - ESP_OK: On success.
+ *     - ESP_FAIL: On a fatal NVS error.
+ *     - ESP_ERR_INVALID_ARG: If key or value is NULL.
+ */
+esp_err_t bios_config_aq_set_string(const char *key, const char *value);
 
 #ifdef __cplusplus
 }
