@@ -26,30 +26,12 @@
 static const char *TAG = "usb_comm_aq";
 
 // -----------------------------------------------------------------------------
-// USB Descriptors & Configuration
-// -----------------------------------------------------------------------------
-#define USBD_VID (0x303A)
-#define USBD_PID (0x4008)
-
-
-static const tusb_desc_device_t s_tusb_device_descriptor = {
-    .bLength = sizeof(tusb_desc_device_t), .bDescriptorType = TUSB_DESC_DEVICE, .bcdUSB = 0x0200,
-    .bDeviceClass = TUSB_CLASS_MISC, .bDeviceSubClass = MISC_SUBCLASS_COMMON, .bDeviceProtocol = MISC_PROTOCOL_IAD,
-    .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
-    .idVendor = USBD_VID, .idProduct = USBD_PID, .bcdDevice = 0x0101,
-    .iManufacturer = STRID_MANUFACTURER, .iProduct = STRID_PRODUCT, .iSerialNumber = STRID_SERIAL,
-    .iManufacturer = STRID_MANUFACTURER, .iProduct = STRID_PRODUCT, .iSerialNumber = STRID_SERIAL,
-    .bNumConfigurations = 0x01
-};
-
-// -----------------------------------------------------------------------------
 // esp_netif Glue & State
 // -----------------------------------------------------------------------------
 static esp_netif_t *s_usb_netif = NULL;
 static usb_comm_aq_event_callback_t s_event_callback = NULL;
 static bool s_usb_connected = false;
 static uint8_t s_mac_address[6];
-static char s_mac_address_str[13];
 
 // Forward declarations for our custom driver functions
 static esp_err_t aq_netif_driver_transmit(void *h, void *buffer, size_t len);
@@ -75,16 +57,14 @@ esp_err_t usb_comm_aq_init(const char *panel_id, const char *ip_addr, const uint
 
     // 1. Get USB strings and MAC address
     memcpy(s_mac_address, mac_addr, sizeof(s_mac_address));
-    snprintf(s_mac_address_str, sizeof(s_mac_address_str), "%02X%02X%02X%02X%02X%02X",
-             s_mac_address[0], s_mac_address[1], s_mac_address[2], s_mac_address[3], s_mac_address[4], s_mac_address[5]);
 
     // 2. Install TinyUSB driver
     const tinyusb_config_t tusb_cfg = {
-        .device_descriptor = &s_tusb_device_descriptor,
+        .device_descriptor = NULL,
         .string_descriptor = NULL,
         .string_descriptor_count = 0,
         .external_phy = false,
-        .configuration_descriptor = NULL, // Let TinyUSB generate it
+        .configuration_descriptor = NULL,
         .self_powered = true,
     };
     ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
@@ -109,8 +89,6 @@ esp_err_t usb_comm_aq_init(const char *panel_id, const char *ip_addr, const uint
     log_json_message(TAG, "INFO", "USB-NCM initialization complete.");
     return ESP_OK;
 }
-
-
 
 // --- Glue function implementations ---
 static esp_err_t aq_netif_driver_transmit(void *h, void *buffer, size_t len) {
