@@ -39,7 +39,7 @@ typedef void (*usb_comm_aq_event_callback_t)(bool connected);
  *     - ESP_FAIL: If any critical step fails (e.g., netif creation, driver installation).
  *     - ESP_ERR_INVALID_ARG: If input parameters are invalid.
  */
-esp_err_t usb_comm_aq_init(const char *panel_id, const char *ip_addr, usb_comm_aq_event_callback_t cb);
+esp_err_t usb_comm_aq_init(const char *panel_id, const char *ip_addr, const uint8_t* mac_addr, usb_comm_aq_event_callback_t cb);
 
 #ifdef __cplusplus
 }

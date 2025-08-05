@@ -39,6 +39,7 @@ static const tusb_desc_device_t s_tusb_device_descriptor = {
     .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
     .idVendor = USBD_VID, .idProduct = USBD_PID, .bcdDevice = 0x0101,
     .iManufacturer = STRID_MANUFACTURER, .iProduct = STRID_PRODUCT, .iSerialNumber = STRID_SERIAL,
+    .iManufacturer = STRID_MANUFACTURER, .iProduct = STRID_PRODUCT, .iSerialNumber = STRID_SERIAL,
     .bNumConfigurations = 0x01
 };
 
@@ -58,28 +59,20 @@ void tud_network_init_cb(void);
 // -----------------------------------------------------------------------------
 // Public API Implementation
 // -----------------------------------------------------------------------------
-esp_err_t usb_comm_aq_init(const char *panel_id, const char *ip_addr, usb_comm_aq_event_callback_t cb) {
+esp_err_t usb_comm_aq_init(const char *panel_id, const char *ip_addr, const uint8_t* mac_addr, usb_comm_aq_event_callback_t cb) {
     log_json_message(TAG, "INFO", "Initializing USB-NCM component...");
     s_event_callback = cb;
 
     // 1. Get USB strings and MAC address
-    get_usb_ncm_mac(s_mac_address);
+    memcpy(s_mac_address, mac_addr, sizeof(s_mac_address));
     snprintf(s_mac_address_str, sizeof(s_mac_address_str), "%02X%02X%02X%02X%02X%02X",
              s_mac_address[0], s_mac_address[1], s_mac_address[2], s_mac_address[3], s_mac_address[4], s_mac_address[5]);
-
-    const char *s_tusb_string_descriptors[] = {
-        [STRID_LANGID]       = (const char[]){0x09, 0x04},
-        [STRID_MANUFACTURER] = config_aq_get_usb_manufacturer(),
-        [STRID_PRODUCT]      = config_aq_get_usb_product(),
-        [STRID_SERIAL]       = config_aq_get_usb_serial(),
-        [STRID_MAC]          = s_mac_address_str,
-    };
 
     // 2. Install TinyUSB driver
     const tinyusb_config_t tusb_cfg = {
         .device_descriptor = &s_tusb_device_descriptor,
-        .string_descriptor = s_tusb_string_descriptors,
-        .string_descriptor_count = sizeof(s_tusb_string_descriptors) / sizeof(s_tusb_string_descriptors[0]),
+        .string_descriptor = NULL,
+        .string_descriptor_count = 0,
         .external_phy = false,
         .configuration_descriptor = NULL, // Let TinyUSB generate it
         .self_powered = true,
@@ -104,6 +97,8 @@ esp_err_t usb_comm_aq_init(const char *panel_id, const char *ip_addr, usb_comm_a
     return ESP_OK;
 }
 
+
+
 // --- Glue function implementations ---
 static esp_err_t aq_netif_driver_transmit(void *h, void *buffer, size_t len) {
     if (tud_ready() && tud_network_can_xmit(len)) {
@@ -114,6 +109,12 @@ static esp_err_t aq_netif_driver_transmit(void *h, void *buffer, size_t len) {
 }
 
 // --- TinyUSB Callbacks ---
+
+void tud_network_mac_address_cb(uint8_t mac_addr[6])
+{
+    memcpy(mac_addr, s_mac_address, 6);
+}
+
 bool tud_network_recv_cb(const uint8_t *src, uint16_t size) {
     if (s_usb_netif) {
         esp_netif_receive(s_usb_netif, (void *)src, size, NULL);

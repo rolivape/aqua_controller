@@ -1,0 +1,11 @@
+menu "Aqua Controller USB Configuration"
+
+    config AQ_USB_MAC_AUTOGEN
+        bool "Autogenerate USB MAC Address"
+        default y
+        help
+            If enabled, a unique MAC address for the USB network interface will be
+            generated from the device's eFuse MAC and stored in NVS on the first
+            boot. If disabled, a fallback MAC address must be provided.
+
+endmenu

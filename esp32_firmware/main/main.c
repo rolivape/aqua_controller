@@ -9,6 +9,7 @@
 #include "json_log.h"
 #include "usb_comm_aq.h"
 #include "config_aq.h"
+#include "usb_mac.h"
 
 static const char *TAG = "AQUA_MAIN";
 
@@ -45,13 +46,22 @@ void app_main(void)
 
     log_json_message(TAG, "INFO", "Starting AquaControllerUSB v5.2...");
 
-    // Step 5: Initialize the USB communication stack.
-    if (usb_comm_aq_init("main-panel", "192.168.7.10", usb_event_callback) != ESP_OK) {
+    // Step 5: Get USB MAC address
+    uint8_t mac_addr[6];
+    if (usb_mac_get(mac_addr) != ESP_OK) {
+        log_json_message(TAG, "FATAL", "Failed to get USB MAC address. Halting.");
+        while(1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
+    }
+    ESP_LOGI("usb_mac", "MAC: %02x:%02x:%02x:%02x:%02x:%02x", mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+
+
+    // Step 6: Initialize the USB communication stack.
+    if (usb_comm_aq_init("main-panel", "192.168.7.10", mac_addr, usb_event_callback) != ESP_OK) {
         log_json_message(TAG, "ERROR", "USB Comm initialization failed. Entering SAFE MODE.");
         while(1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
     }
 
-    // Step 6: Initialize the main application logic.
+    // Step 7: Initialize the main application logic.
     if (app_logic_aq_init() != ESP_OK) {
         log_json_message(TAG, "ERROR", "Application logic initialization failed. Halting.");
         while(1) { vTaskDelay(pdMS_TO_TICKS(1000)); }
