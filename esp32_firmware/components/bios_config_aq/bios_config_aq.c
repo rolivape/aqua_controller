@@ -76,3 +76,54 @@ esp_err_t bios_config_aq_set_string(const char *key, const char *value) {
     nvs_close(nvs_handle);
     return ESP_OK;
 }
+
+esp_err_t bios_config_aq_get_blob(const char* key, void* out_value, size_t* length) {
+    if (key == NULL || out_value == NULL || length == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    nvs_handle_t nvs_handle;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &nvs_handle);
+    if (err != ESP_OK) {
+        log_json_message(TAG, "ERROR", "Failed to open NVS namespace for reading blob.");
+        return ESP_FAIL;
+    }
+
+    err = nvs_get_blob(nvs_handle, key, out_value, length);
+    if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
+        log_json_message(TAG, "ERROR", "Failed to read blob from NVS.");
+    }
+
+    nvs_close(nvs_handle);
+    return err;
+}
+
+esp_err_t bios_config_aq_set_blob(const char* key, const void* value, size_t length) {
+    if (key == NULL || value == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    nvs_handle_t nvs_handle;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &nvs_handle);
+    if (err != ESP_OK) {
+        log_json_message(TAG, "ERROR", "Failed to open NVS namespace for writing blob.");
+        return ESP_FAIL;
+    }
+
+    err = nvs_set_blob(nvs_handle, key, value, length);
+    if (err != ESP_OK) {
+        log_json_message(TAG, "ERROR", "Failed to write blob to NVS.");
+        nvs_close(nvs_handle);
+        return ESP_FAIL;
+    }
+
+    err = nvs_commit(nvs_handle);
+    if (err != ESP_OK) {
+        log_json_message(TAG, "ERROR", "Failed to commit blob to NVS.");
+        nvs_close(nvs_handle);
+        return ESP_FAIL;
+    }
+
+    nvs_close(nvs_handle);
+    return ESP_OK;
+}

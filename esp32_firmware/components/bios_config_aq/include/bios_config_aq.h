@@ -10,6 +10,7 @@
 
 #include "esp_err.h"
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,6 +51,35 @@ esp_err_t bios_config_aq_get_string(const char *key, char *out_value, size_t max
  *     - ESP_ERR_INVALID_ARG: If key or value is NULL.
  */
 esp_err_t bios_config_aq_set_string(const char *key, const char *value);
+
+/**
+ * @brief Retrieves a binary data blob from NVS.
+ *
+ * @param[in]      key       The NVS key for the blob.
+ * @param[out]     out_value Buffer to store the retrieved blob.
+ * @param[in,out]  length    On input, the size of the out_value buffer.
+ *                           On output, the actual size of the retrieved blob.
+ *
+ * @return
+ *     - ESP_OK: On success.
+ *     - ESP_ERR_NVS_NOT_FOUND: If the key does not exist.
+ *     - Other NVS errors on failure.
+ */
+esp_err_t bios_config_aq_get_blob(const char* key, void* out_value, size_t* length);
+
+/**
+ * @brief Stores a binary data blob in NVS.
+ *
+ * @param[in] key   The NVS key for the blob.
+ * @param[in] value Pointer to the data to store.
+ * @param[in] length The length of the data in bytes.
+ *
+ * @return
+ *     - ESP_OK: On success.
+ *     - Other NVS errors on failure.
+ */
+esp_err_t bios_config_aq_set_blob(const char* key, const void* value, size_t length);
+
 
 #ifdef __cplusplus
 }

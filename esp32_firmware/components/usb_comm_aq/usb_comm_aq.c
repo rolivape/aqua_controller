@@ -20,6 +20,7 @@
 #include "usb_comm_aq.h"
 #include "config_aq.h"
 #include "json_log.h"
+#include "usb_mac.h"
 
 static const char *TAG = "usb_comm_aq";
 
@@ -47,7 +48,7 @@ static const tusb_desc_device_t s_tusb_device_descriptor = {
 static esp_netif_t *s_usb_netif = NULL;
 static usb_comm_aq_event_callback_t s_event_callback = NULL;
 static bool s_usb_connected = false;
-static uint8_t s_mac_address[6] = {0x02, 0x00, 0x04, 0x00, 0x00, 0x00};
+static uint8_t s_mac_address[6];
 static char s_mac_address_str[13];
 
 // Forward declarations for our custom driver functions
@@ -62,6 +63,7 @@ esp_err_t usb_comm_aq_init(const char *panel_id, const char *ip_addr, usb_comm_a
     s_event_callback = cb;
 
     // 1. Get USB strings and MAC address
+    get_usb_ncm_mac(s_mac_address);
     snprintf(s_mac_address_str, sizeof(s_mac_address_str), "%02X%02X%02X%02X%02X%02X",
              s_mac_address[0], s_mac_address[1], s_mac_address[2], s_mac_address[3], s_mac_address[4], s_mac_address[5]);
 
