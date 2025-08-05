@@ -21,7 +21,6 @@
 #include "config_aq.h"
 #include "json_log.h"
 #include "usb_mac.h"
-#include "usb_descriptors.h"
 
 static const char *TAG = "usb_comm_aq";
 
@@ -58,14 +57,12 @@ esp_err_t usb_comm_aq_init(const char *panel_id, const char *ip_addr, const uint
     // 1. Get USB strings and MAC address
     memcpy(s_mac_address, mac_addr, sizeof(s_mac_address));
 
-    // 2. Install TinyUSB driver
+    // 2. Install TinyUSB driver.
+    // By leaving descriptor fields as default (zero), TinyUSB will use the callback
+    // functions implemented in the usb_descriptors_aq component.
     const tinyusb_config_t tusb_cfg = {
-        .device_descriptor = NULL,
-        .string_descriptor = NULL,
-        .string_descriptor_count = 0,
-        .external_phy = false,
-        .configuration_descriptor = NULL,
         .self_powered = true,
+        .external_phy = false,
     };
     ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
     log_json_message(TAG, "INFO", "TinyUSB driver installed.");
