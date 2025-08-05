@@ -21,6 +21,7 @@
 #include "config_aq.h"
 #include "json_log.h"
 #include "usb_mac.h"
+#include "usb_descriptors.h"
 
 static const char *TAG = "usb_comm_aq";
 
@@ -30,8 +31,6 @@ static const char *TAG = "usb_comm_aq";
 #define USBD_VID (0x303A)
 #define USBD_PID (0x4008)
 
-enum { ITF_NUM_CDC_NCM = 0, ITF_NUM_CDC_NCM_DATA, ITF_NUM_TOTAL };
-enum { STRID_LANGID = 0, STRID_MANUFACTURER, STRID_PRODUCT, STRID_SERIAL, STRID_MAC };
 
 static const tusb_desc_device_t s_tusb_device_descriptor = {
     .bLength = sizeof(tusb_desc_device_t), .bDescriptorType = TUSB_DESC_DEVICE, .bcdUSB = 0x0200,
@@ -123,11 +122,6 @@ static esp_err_t aq_netif_driver_transmit(void *h, void *buffer, size_t len) {
 }
 
 // --- TinyUSB Callbacks ---
-
-void tud_network_mac_address_cb(uint8_t mac_addr[6])
-{
-    memcpy(mac_addr, s_mac_address, 6);
-}
 
 bool tud_network_recv_cb(const uint8_t *src, uint16_t size) {
     if (s_usb_netif) {

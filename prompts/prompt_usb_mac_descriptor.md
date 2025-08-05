@@ -1,56 +1,74 @@
-# Prompt: Insertar String Descriptor para MAC en USB-NCM
+Prompt Gemini CLI
+prompt
+Copy
+Edit
+🔧 TAREA
+Corregir la implementación del descriptor USB y de la función `tud_descriptor_string_cb()` en el componente `usb_netif_aq` del proyecto AquaControl_USB, para que el host (Raspberry Pi) pueda leer correctamente la dirección MAC del dispositivo CDC-NCM al conectar un ESP32-S3 vía USB.
 
-## Objetivo:
-Corregir el error `cdc_ncm: failed to get mac address` detectado en la RPi cuando se conecta el ESP32-S3 vía USB-NCM, asegurando que el índice `iMacAddress` en el descriptor USB retorne un string válido desde `tud_descriptor_string_cb`.
+📂 CONTEXTO DEL PROYECTO
+- Arquitectura modular con componentes personalizados (`*_aq`)
+- Se usa ESP32-S3 + ESP-IDF v5.4.1
+- TinyUSB inicializado correctamente en modo CDC-NCM
+- La MAC se genera correctamente y se muestra en consola, pero el host (RPi) falla con:
+  ```log
+  cdc_ncm 1-2:1.0: failed to get mac address
+  cdc_ncm 1-2:1.0: bind() failure
+En el log del ESP32-S3 aparece:
 
-## Contexto:
-Estamos desarrollando un firmware modular para ESP32-S3 que expone una interfaz USB tipo CDC-NCM (Ethernet over USB) usando TinyUSB. El identificador de dispositivo reportado es:
+W (401) tusb_desc: No String descriptors provided, using default.
+lo que confirma que no se está suministrando el iMACAddress correctamente.
 
-- `idVendor=0x303a`
-- `idProduct=0x4008`
-- Producto: `AquaPanel`
+🎯 OBJETIVO
+Implementar correctamente:
 
-Al cargar el firmware, la salida de `lsusb -v -d 303a:4008` en la RPi muestra:
-```
-CDC Ethernet:
-  iMacAddress                      5 (??)
-```
-Y el kernel lanza:
-```
-cdc_ncm 1-2:1.0: failed to get mac address
-cdc_ncm 1-2:1.0: bind() failure
-```
+Los descriptores USB (device descriptor y NCM interface descriptor) con un índice válido en el campo iMACAddress (por ejemplo, 4).
 
-Esto indica que aunque se definió `iMacAddress = 5` en el descriptor, no se está devolviendo correctamente el string en `tud_descriptor_string_cb()`.
+La función tud_descriptor_string_cb() para retornar una cadena hexadecimal sin delimitadores con la MAC (ej. "02006414cfac").
 
-## Tarea:
-Modificar el archivo donde se implementa el callback `tud_descriptor_string_cb()` (normalmente en `usb_desc.c` o `usb_netif_aq`) para que cuando `index == 5`, se devuelva un descriptor UTF-16 válido con el valor hexadecimal de la MAC address.
+La MAC puede quedar hardcodeada en este paso de desarrollo, no es necesario que sea dinámica.
 
-## Restricciones:
-- Utilizar un string de 12 caracteres hexadecimales, sin `:` ni espacios. Ejemplo: `"02006414CFAC"`.
-- El string debe codificarse en UTF-16 como lo exige TinyUSB.
-- Se debe retornar un puntero válido a un `uint16_t desc_str[]` como respuesta al callback.
-- No deben romperse los índices existentes para iProduct, iManufacturer, etc.
-- El código debe compilar sin warnings en ESP-IDF 5.5 para target `esp32s3`.
+📁 ARCHIVOS A MODIFICAR
 
-## Ejemplo esperado:
-```c
-case 5: { // iMacAddress string descriptor
-  const char* mac_str = "02006414CFAC";
-  chr_count = strlen(mac_str);
-  for (uint8_t i = 0; i < chr_count; i++) {
-    desc_str[1 + i] = mac_str[i];
-  }
-  desc_str[0] = (TUSB_DESC_STRING << 8 ) | (2 * chr_count + 2);
-  return desc_str;
-}
-```
+components/usb_netif_aq/usb_netif_aq.c
+(donde se define tud_descriptor_string_cb() y los descriptores de cadena)
 
-## Archivos involucrados:
-- `components/usb_netif_aq/usb_desc.c` (o ubicación equivalente en el proyecto)
-- Asegurar que esta implementación no interfiera con la configuración dinámica de MAC en `bios_config_aq` si se usa más adelante.
+components/usb_netif_aq/include/usb_netif_aq.h (si agregas prototipo)
 
-## Formato de salida esperado:
-- Código completo y limpio del callback `tud_descriptor_string_cb()`, incluyendo la nueva entrada para `index == 5`.
-- Confirmación de que el código sigue la convención UTF-16 requerida por TinyUSB.
-- Breve resumen de validación y cómo verificarlo con `lsusb -v` y `dmesg`.
+Si lo ves conveniente, mover los descriptores a un nuevo archivo usb_descriptors_aq.c y su encabezado.
+
+🧩 CONDICIONES DE IMPLEMENTACIÓN
+
+No modificar main.c
+
+No implementar lógica de red todavía, solo visibilidad del dispositivo NCM en el host
+
+El código debe seguir el estilo del proyecto (usando sufijos _aq)
+
+Usar ESP_LOGI() o ESP_LOGW() para depuración si aplica
+
+🧪 VALIDACIÓN ESPERADA
+
+El ESP32-S3 aparece en dmesg del RPi con:
+
+cdc_ncm: MAC-Address: 02:00:64:14:cf:ac
+cdc_ncm: network interface usb0 created
+ip link en RPi muestra usb0 o enx...
+
+📎 NOTAS EXTRA
+
+Puedes usar el ejemplo de string descriptor que retorna la MAC como string hexadecimal (12 caracteres).
+
+La MAC debe estar en formato sin :, solo hexadecimal plano (ej. 02006414cfac).
+
+Usa índice 4 como iMACAddress y documenta que en el array string_desc_arr[] es el slot correspondiente.
+
+🔚 SALIDA ESPERADA
+Código completo funcional de:
+
+Implementación de tud_descriptor_string_cb()
+
+Definición del array string_desc_arr[]
+
+Confirmación de que iMACAddress está en índice correcto en los descriptores
+
+Indicación clara de en qué archivo va cada parte
