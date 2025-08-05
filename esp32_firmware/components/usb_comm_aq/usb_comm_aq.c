@@ -56,6 +56,17 @@ static char s_mac_address_str[13];
 static esp_err_t aq_netif_driver_transmit(void *h, void *buffer, size_t len);
 void tud_network_init_cb(void);
 
+// USB task
+static void usb_task(void *param)
+{
+    (void)param;
+    ESP_LOGI(TAG, "usb_task running");
+    while (1) {
+        tud_task();
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
+
 // -----------------------------------------------------------------------------
 // Public API Implementation
 // -----------------------------------------------------------------------------
@@ -79,6 +90,9 @@ esp_err_t usb_comm_aq_init(const char *panel_id, const char *ip_addr, const uint
     };
     ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
     log_json_message(TAG, "INFO", "TinyUSB driver installed.");
+
+    // Create a task to run tud_task()
+    xTaskCreate(usb_task, "usb_task", 4096, NULL, 5, NULL);
 
     // 3. Create the esp_netif instance. The IO driver is set later in tud_network_init_cb
     const esp_netif_config_t netif_cfg = ESP_NETIF_DEFAULT_ETH();
