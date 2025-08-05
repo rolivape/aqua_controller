@@ -1,0 +1,2 @@
+source /mnt/aqua_repo/aqua_controller/esp32_firmware/build_test/bootloader/gdbinit/symbols
+source /mnt/aqua_repo/aqua_controller/esp32_firmware/build_test/bootloader/gdbinit/connect
